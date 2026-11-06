@@ -36,6 +36,7 @@
     {"id":{"name":"spr_geladeira","path":"sprites/spr_geladeira/spr_geladeira.yy",},},
     {"id":{"name":"spr_menu_fundo","path":"sprites/spr_menu_fundo/spr_menu_fundo.yy",},},
     {"id":{"name":"spr_menu_instrucoes","path":"sprites/spr_menu_instrucoes/spr_menu_instrucoes.yy",},},
+    {"id":{"name":"spr_pia","path":"sprites/spr_pia/spr_pia.yy",},},
     {"id":{"name":"spr_player_baixo","path":"sprites/spr_player_baixo/spr_player_baixo.yy",},},
     {"id":{"name":"spr_player_cima","path":"sprites/spr_player_cima/spr_player_cima.yy",},},
     {"id":{"name":"spr_player_direita","path":"sprites/spr_player_direita/spr_player_direita.yy",},},

@@ -105,19 +105,20 @@ draw_set_halign(fa_center);
 draw_text((bx1 + bx2)/2, by1 + 22, "BANCADA DE PREPARO");
 draw_set_halign(fa_left);
 
-// Pia
-var px1 = ui_map_x(625), px2 = ui_map_x(755);
-var py1 = ui_map_y(515), py2 = ui_map_y(585);
-draw_set_color(make_color_rgb(113, 147, 156));
-draw_rectangle(px1, py1, px2, py2, false);
-draw_set_color(make_color_rgb(206, 223, 226));
-draw_rectangle(px1 + 12, py1 + 9, px2 - 12, py2 - 9, false);
-draw_set_color(make_color_rgb(70, 94, 103));
-draw_circle((px1 + px2)/2, (py1 + py2)/2, 6, false);
-draw_rectangle((px1 + px2)/2 - 5, py1 + 1, (px1 + px2)/2 + 5, py1 + 17, false);
+
+// -------------------------------------------------------------
+// PIA - coordenadas da estacao
+// -------------------------------------------------------------
+
+var px1 = ui_map_x(625);
+var px2 = ui_map_x(755);
+var py1 = ui_map_y(515);
+var py2 = ui_map_y(585);
+
+// Nome da estacao
 draw_set_color(cor_escuro);
 draw_set_halign(fa_center);
-draw_text((px1 + px2)/2, py2 + 6, "PIA");
+draw_text((px1 + px2) / 2, py2 + 6, "PIA");
 draw_set_halign(fa_left);
 
 // Fogao
@@ -565,3 +566,35 @@ draw_set_alpha(1);
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_color(c_white);
+
+
+
+// -------------------------------------------------------------
+// 14. SPRITE DA PIA INDUSTRIAL
+// -------------------------------------------------------------
+
+// Posicao da estacao PIA na interface
+var pia_centro_x = (px1 + px2) / 2;
+var pia_centro_y = (py1 + py2) / 2;
+
+// Dimensoes do sprite
+var pia_largura = 140;
+var pia_altura = 80;
+
+// Escalas proporcionais ao tamanho desejado
+var pia_escala_x = pia_largura / sprite_get_width(spr_pia);
+var pia_escala_y = pia_altura / sprite_get_height(spr_pia);
+
+// Desenha a pia na estacao correta
+draw_sprite_ext(
+    spr_pia,
+    0,
+    pia_centro_x,
+    pia_centro_y,
+    pia_escala_x,
+    pia_escala_y,
+    0,
+    c_white,
+    1
+);
+altura_pia = 80;
