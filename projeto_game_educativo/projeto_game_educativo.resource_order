@@ -14,11 +14,13 @@
     {"name":"spr_est_laticinios","order":14,"path":"sprites/spr_est_laticinios/spr_est_laticinios.yy",},
     {"name":"spr_est_proteinas","order":17,"path":"sprites/spr_est_proteinas/spr_est_proteinas.yy",},
     {"name":"spr_est_verduras","order":12,"path":"sprites/spr_est_verduras/spr_est_verduras.yy",},
+    {"name":"spr_geladeira","order":22,"path":"sprites/spr_geladeira/spr_geladeira.yy",},
     {"name":"spr_menu_fundo","order":18,"path":"sprites/spr_menu_fundo/spr_menu_fundo.yy",},
     {"name":"spr_menu_instrucoes","order":19,"path":"sprites/spr_menu_instrucoes/spr_menu_instrucoes.yy",},
     {"name":"spr_player_baixo","order":4,"path":"sprites/spr_player_baixo/spr_player_baixo.yy",},
     {"name":"spr_player_cima","order":5,"path":"sprites/spr_player_cima/spr_player_cima.yy",},
     {"name":"spr_player_direita","order":7,"path":"sprites/spr_player_direita/spr_player_direita.yy",},
     {"name":"spr_player_esquerda","order":6,"path":"sprites/spr_player_esquerda/spr_player_esquerda.yy",},
+    {"name":"spr_sacola","order":21,"path":"sprites/spr_sacola/spr_sacola.yy",},
   ],
 }
