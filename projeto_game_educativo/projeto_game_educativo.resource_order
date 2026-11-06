@@ -14,6 +14,7 @@
     {"name":"spr_est_laticinios","order":14,"path":"sprites/spr_est_laticinios/spr_est_laticinios.yy",},
     {"name":"spr_est_proteinas","order":17,"path":"sprites/spr_est_proteinas/spr_est_proteinas.yy",},
     {"name":"spr_est_verduras","order":12,"path":"sprites/spr_est_verduras/spr_est_verduras.yy",},
+    {"name":"spr_fogao","order":24,"path":"sprites/spr_fogao/spr_fogao.yy",},
     {"name":"spr_geladeira","order":22,"path":"sprites/spr_geladeira/spr_geladeira.yy",},
     {"name":"spr_menu_fundo","order":18,"path":"sprites/spr_menu_fundo/spr_menu_fundo.yy",},
     {"name":"spr_menu_instrucoes","order":19,"path":"sprites/spr_menu_instrucoes/spr_menu_instrucoes.yy",},

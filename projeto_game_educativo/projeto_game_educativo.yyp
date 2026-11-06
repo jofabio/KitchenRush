@@ -33,6 +33,7 @@
     {"id":{"name":"spr_est_laticinios","path":"sprites/spr_est_laticinios/spr_est_laticinios.yy",},},
     {"id":{"name":"spr_est_proteinas","path":"sprites/spr_est_proteinas/spr_est_proteinas.yy",},},
     {"id":{"name":"spr_est_verduras","path":"sprites/spr_est_verduras/spr_est_verduras.yy",},},
+    {"id":{"name":"spr_fogao","path":"sprites/spr_fogao/spr_fogao.yy",},},
     {"id":{"name":"spr_geladeira","path":"sprites/spr_geladeira/spr_geladeira.yy",},},
     {"id":{"name":"spr_menu_fundo","path":"sprites/spr_menu_fundo/spr_menu_fundo.yy",},},
     {"id":{"name":"spr_menu_instrucoes","path":"sprites/spr_menu_instrucoes/spr_menu_instrucoes.yy",},},

@@ -121,24 +121,19 @@ draw_set_halign(fa_center);
 draw_text((px1 + px2) / 2, py2 + 6, "PIA");
 draw_set_halign(fa_left);
 
-// Fogao
-var fx1 = ui_map_x(785), fx2 = ui_map_x(890);
-var fy1 = ui_map_y(460), fy2 = ui_map_y(570);
-draw_set_color(make_color_rgb(108, 113, 116));
-draw_rectangle(fx1, fy1, fx2, fy2, false);
-draw_set_color(make_color_rgb(19, 22, 25));
-var fogox1 = fx1 + (fx2-fx1)*0.25;
-var fogox2 = fx1 + (fx2-fx1)*0.75;
-var fogoy1 = fy1 + (fy2-fy1)*0.25;
-var fogoy2 = fy1 + (fy2-fy1)*0.75;
-draw_circle(fogox1, fogoy1, 12, false);
-draw_circle(fogox2, fogoy1, 12, false);
-draw_circle(fogox1, fogoy2, 12, false);
-draw_circle(fogox2, fogoy2, 12, false);
+
+// FOGAO - coordenadas da estacao
+var fx1 = ui_map_x(785);
+var fx2 = ui_map_x(890);
+var fy1 = ui_map_y(460);
+var fy2 = ui_map_y(570);
+
+// Nome da estacao
 draw_set_color(cor_escuro);
 draw_set_halign(fa_center);
-draw_text((fx1+fx2)/2, fy2 + 6, "FOGAO");
+draw_text((fx1 + fx2) / 2, fy2 + 6, "FOGAO");
 draw_set_halign(fa_left);
+
 
 // -------------------------------------------------------------
 // 5. CHEF E PERSONAGEM (POSICOES LOGICAS PRESERVADAS)
@@ -598,3 +593,29 @@ draw_sprite_ext(
     1
 );
 altura_pia = 80;
+
+
+// -------------------------------------------------------------
+// 15. SPRITE DO FOGAO INDUSTRIAL
+// -------------------------------------------------------------
+
+var fogao_centro_x = (fx1 + fx2) / 2;
+var fogao_centro_y = (fy1 + fy2) / 2;
+
+var fogao_largura = 125;
+var fogao_altura = 120;
+
+var fogao_escala_x = fogao_largura / sprite_get_width(spr_fogao);
+var fogao_escala_y = fogao_altura / sprite_get_height(spr_fogao);
+
+draw_sprite_ext(
+    spr_fogao,
+    0,
+    fogao_centro_x,
+    fogao_centro_y,
+    fogao_escala_x,
+    fogao_escala_y,
+    0,
+    c_white,
+    1
+);
