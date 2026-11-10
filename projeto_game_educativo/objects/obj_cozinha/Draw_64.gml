@@ -1,7 +1,6 @@
 /// KITCHENRUSH | DRAW GUI | INTERFACE V3 (1280 x 720)
 /// Este evento substitui TODO o Draw GUI antigo do obj_cozinha.
 /// Todas as coordenadas da logica de jogo continuam iguais.
-
 // -------------------------------------------------------------
 // 1. PALETA E PREPARACAO
 // -------------------------------------------------------------
@@ -170,7 +169,11 @@ if (missao_ativa && !jogo_concluido) {
     draw_text(26, 82, "MISSAO " + string(indice_missao + 1) + "/" + string(array_length(missoes))
                          + "  -  " + missao_topo.nome);
     draw_set_color(c_white);
-    draw_text(26, 107, "Dica: " + missao_topo.dica);
+    if (missao_topo.nivel != "final") {
+        if (missao_topo.livre) draw_text(26, 107, "Meta: " + string(missao_topo.kcal_min) + "-" + string(missao_topo.kcal_max) + " kcal | " + missao_topo.dica);
+        else draw_text(26, 107, "Dica: " + missao_topo.dica);
+    }
+    else draw_text(26, 107, "Sem dicas | Requisitos: 7-8 itens; proteina, carboidrato, fruta, 2 vegetais; 450-650 kcal");
 } else {
     draw_set_color(cor_claro);
     if (jogo_concluido) {
@@ -233,8 +236,9 @@ draw_text(1033, 50,
 );
 
 // Itens coletados e espacos vazios.
-for (var s = 0; s < total_necessario; s++) {
-    var bag_y = 75 + s * 24;
+var sacola_inicio = max(0, array_length(sacola) - 3);
+for (var s = sacola_inicio; s < min(total_necessario, sacola_inicio + 3); s++) {
+    var bag_y = 75 + (s - sacola_inicio) * 20;
     if (s < array_length(sacola)) {
         draw_set_color(make_color_rgb(38, 128, 73));
         draw_text(1032, bag_y, "[+] " + string(sacola[s]));
@@ -309,7 +313,7 @@ draw_set_color(cor_ouro);
 draw_text(955, 654, "CONTROLES");
 draw_set_color(c_white);
 draw_text(955, 674, "WASD / SETAS   Mover");
-draw_text(955, 693, "E  Interagir   |   1-3  Responder");
+draw_text(955, 693, "E  Interagir   |   1-4  Responder");
 
 // -------------------------------------------------------------
 // 10. PERGUNTA NUTRICIONAL (MODAL CENTRAL)
@@ -321,22 +325,38 @@ if (pergunta_ativa) {
     draw_set_alpha(1);
 
     draw_set_color(make_color_rgb(88, 65, 44));
-    draw_roundrect(240, 218, 1040, 546, false);
+    draw_roundrect(240, 187, 1040, 621, false);
     draw_set_color(cor_claro);
-    draw_roundrect(246, 224, 1034, 540, false);
+    draw_roundrect(246, 193, 1034, 615, false);
     draw_set_color(cor_painel);
-    draw_roundrect(262, 241, 1018, 288, false);
+    draw_roundrect(262, 205, 1018, 252, false);
     draw_set_color(cor_ouro);
-    draw_text_transformed(288, 252, "DESAFIO DE NUTRICAO", 1.38, 1.38, 0);
+    draw_text_transformed(288, 214, "DESAFIO DE NUTRICAO", 1.38, 1.38, 0);
     draw_set_color(cor_escuro);
-    draw_text_ext(288, 310, pergunta, 22, 684);
-    for (var p = 0; p < 3; p++) {
-        var opt_y = 372 + 49 * p;
+    draw_text_ext(288, 273, pergunta, 21, 684);
+    for (var p = 0; p < array_length(opcoes); p++) {
+        var opt_y = 366 + 57 * p;
         draw_set_color(make_color_rgb(220, 230, 215));
-        draw_roundrect(285, opt_y, 992, opt_y + 40, false);
+        draw_roundrect(285, opt_y, 850, opt_y + 46, false);
         draw_set_color(cor_escuro);
-        draw_text(307, opt_y + 11, string(p + 1) + ")  " + opcoes[p]);
+        draw_text_ext(307, opt_y + 9, string(p + 1) + ")  " + opcoes[p], 19, 665);
     }
+	
+	/// ESTAGIARIO PENSANDO - CAIXA DE PERGUNTAS
+	draw_set_color(c_white);
+
+	draw_sprite_ext(
+	    spr_player_pensando,
+	    0,
+	    930,
+	    420,
+	    0.18,
+	    0.18,
+	    0,
+	    c_white,
+	    1
+	);
+
 }
 
 // -------------------------------------------------------------
@@ -372,10 +392,10 @@ if (corte_ativo || arroz_ativo || frango_ativo || fruta_ativo || leite_ativo || 
         instrucao_mini = "Pressione o numero indicado (0 a 9).";
     } else if (leite_ativo) {
         titulo_mini = "LATICINIOS - MEDIDA CERTA";
-        instrucao_mini = "Segure ESPACO; solte entre 75% e 85%.";
+        instrucao_mini = "Segure ESPACO; solte entre " + string(leite_zona_inicio) + "% e " + string(leite_zona_fim) + "%.";
     } else if (bebida_ativo) {
         titulo_mini = "BEBIDAS - MISTURA EQUILIBRADA";
-        instrucao_mini = "Alterne as teclas A e D ate completar 10 pontos.";
+        instrucao_mini = "Alterne A e D ate completar " + string(bebida_meta) + " pontos.";
     }
 
     draw_text_transformed(640, 246, titulo_mini, 1.34, 1.34, 0);
@@ -398,10 +418,10 @@ if (corte_ativo || arroz_ativo || frango_ativo || fruta_ativo || leite_ativo || 
             zona_ini = frango_zona_inicio; zona_fim = frango_zona_fim;
             valor = frango_temperatura;
         } else if (leite_ativo) {
-            zona_ini = 75; zona_fim = 85; valor = leite_nivel;
+            zona_ini = leite_zona_inicio; zona_fim = leite_zona_fim; valor = leite_nivel;
         } else {
-            zona_ini = 0; zona_fim = clamp(bebida_progresso * 10, 0, 100);
-            valor = bebida_progresso * 10;
+            zona_ini = 0; zona_fim = clamp(bebida_progresso * 100 / max(1, bebida_meta), 0, 100);
+            valor = zona_fim;
         }
         draw_set_color(cor_verde);
         draw_rectangle(bx + bw * zona_ini/100, by,
@@ -419,20 +439,20 @@ if (corte_ativo || arroz_ativo || frango_ativo || fruta_ativo || leite_ativo || 
         draw_set_color(c_white);
         draw_text(640, 422, "Acertos: " + string(fruta_acertos) + "/" + string(fruta_meta)
                        + "   |   Tempo: " + string(ceil(fruta_tempo/room_speed)) + " s");
-        draw_text(640, 447, "Bonus: ate 150 XP por velocidade");
+        draw_text(640, 447, "Falhas: " + string(mini_erros) + "/" + string(limite_erros_minigame()));
     } else if (corte_ativo) {
-        draw_text(640, 423, "Cortes: " + string(corte_acertos) + "/3   |   Erros: " + string(corte_erros));
+        draw_text(640, 423, "Cortes: " + string(corte_acertos) + "/3   |   Falhas: " + string(mini_erros) + "/" + string(limite_erros_minigame()));
     } else if (arroz_ativo) {
         draw_text(640, 423, "Cozimento: " + string(floor(arroz_progresso))
-                       + "%   |   Tentativas: " + string(arroz_tentativas));
+                       + "%   |   Falhas: " + string(mini_erros) + "/" + string(limite_erros_minigame()));
     } else if (frango_ativo) {
         draw_text(640, 423, "Temperatura: " + string(floor(frango_temperatura)) + "%");
         draw_text(640, 448, "Tempo ideal: " + string(floor(frango_tempo_ideal / room_speed))
-                       + " / " + string(floor(frango_tempo_necessario / room_speed)) + " s");
+                       + " / " + string(floor(frango_tempo_necessario / room_speed)) + " s | Falhas: " + string(mini_erros) + "/" + string(limite_erros_minigame()));
     } else if (leite_ativo) {
-        draw_text(640, 423, "Nivel da dosagem: " + string(floor(leite_nivel)) + "%");
+        draw_text(640, 423, "Dosagem: " + string(floor(leite_nivel)) + "%  | Falhas: " + string(mini_erros) + "/" + string(limite_erros_minigame()));
     } else if (bebida_ativo) {
-        draw_text(640, 423, "Mistura: " + string(bebida_progresso) + "/10");
+        draw_text(640, 423, "Mistura: " + string(bebida_progresso) + "/" + string(bebida_meta) + " | Falhas: " + string(mini_erros) + "/" + string(limite_erros_minigame()));
     }
     draw_set_color(cor_ouro);
     draw_text_ext(640, 495, mensagem_preparo, 18, 610);
@@ -506,7 +526,7 @@ if (montagem_ativa) {
     if (montagem_fase == 0) draw_text(cx, y1 + 382, "Prepare-se para repetir as setas!");
     else draw_text(cx, y1 + 382, "USE AS SETAS DO TECLADO!");
     draw_set_color(cor_ouro);
-    draw_text(cx, y1 + 420, "ERROS: " + string(montagem_erros) + "/3");
+    draw_text(cx, y1 + 420, "FALHAS: " + string(mini_erros) + "/" + string(limite_erros_minigame()));
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
 }
@@ -556,6 +576,26 @@ if (falha_missao_visivel > 0) {
     draw_set_valign(fa_top);
 }
 
+
+// -------------------------------------------------------------
+// SELECAO DE INGREDIENTE (FASES LIVRES)
+// -------------------------------------------------------------
+if (selecao_ativa) {
+    draw_set_alpha(0.75); draw_set_color(c_black);
+    draw_rectangle(0,157,W,637,false); draw_set_alpha(1);
+    draw_set_color(cor_painel); draw_roundrect(300,175,980,625,false);
+    draw_set_halign(fa_center); draw_set_color(cor_ouro);
+    draw_text_transformed(640,194,"ESCOLHA UM INGREDIENTE",1.2,1.2,0);
+    draw_set_color(c_white);
+    var total_escolhas = min(9,array_length(selecao_opcoes));
+    for(var item_escolha=0;item_escolha<total_escolhas;item_escolha++) {
+        var alimento_escolha=banco_ingredientes[selecao_opcoes[item_escolha]];
+        draw_text(640,237+item_escolha*35,string(item_escolha+1)+") "+alimento_escolha.nome+"  ("+string(alimento_escolha.kcal)+" kcal)");
+    }
+    draw_set_color(cor_ouro); draw_text(640,584,"1-9: escolher | 0 / ESC: cancelar");
+    draw_set_halign(fa_left);
+}
+
 // Garante que o estado de desenho nao contamine outros objetos.
 draw_set_alpha(1);
 draw_set_halign(fa_left);
@@ -568,31 +608,37 @@ draw_set_color(c_white);
 // 14. SPRITE DA PIA INDUSTRIAL
 // -------------------------------------------------------------
 
-// Posicao da estacao PIA na interface
-var pia_centro_x = (px1 + px2) / 2;
-var pia_centro_y = (py1 + py2) / 2;
 
-// Dimensoes do sprite
-var pia_largura = 140;
-var pia_altura = 80;
+if (!pergunta_ativa) {
 
-// Escalas proporcionais ao tamanho desejado
-var pia_escala_x = pia_largura / sprite_get_width(spr_pia);
-var pia_escala_y = pia_altura / sprite_get_height(spr_pia);
+    // Posicao da estacao PIA na interface
+    var pia_centro_x = (px1 + px2) / 2;
+    var pia_centro_y = (py1 + py2) / 2;
 
-// Desenha a pia na estacao correta
-draw_sprite_ext(
-    spr_pia,
-    0,
-    pia_centro_x,
-    pia_centro_y,
-    pia_escala_x,
-    pia_escala_y,
-    0,
-    c_white,
-    1
-);
+    // Dimensoes do sprite
+    var pia_largura = 140;
+    var pia_altura = 80;
+
+    // Escalas proporcionais ao tamanho desejado
+    var pia_escala_x = pia_largura / sprite_get_width(spr_pia);
+    var pia_escala_y = pia_altura / sprite_get_height(spr_pia);
+
+    // Desenha a pia na estacao correta
+    draw_sprite_ext(
+        spr_pia,
+        0,
+        pia_centro_x,
+        pia_centro_y,
+        pia_escala_x,
+        pia_escala_y,
+        0,
+        c_white,
+        1
+    );
+}
+
 altura_pia = 80;
+
 
 
 // -------------------------------------------------------------
