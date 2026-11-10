@@ -1,5 +1,11 @@
+/// KITCHENRUSH | STEP | INTERFACE V3 + MISSOES V5
+// F11 alterna tela cheia, sem alterar coordenadas logicas de colisao.
+if (keyboard_check_pressed(vk_f11)) window_set_fullscreen(!window_get_fullscreen());
+display_set_gui_maximise(window_get_width() / 1280, window_get_height() / 720);
+
 
 // Estado inicial da animacao a cada frame
+if (pergunta_bloqueio > 0) pergunta_bloqueio--;
 player_andando = false;
 // Cronometro em segundos reais: ativo em perguntas, minigames e montagem.
 if (missao_ativa && tempo_missao_rodando) {
@@ -11,7 +17,7 @@ if (falha_missao_visivel > 0) falha_missao_visivel = max(0, falha_missao_visivel
 // KITCHENRUSH - STEP | MINIGAMES POR ESTACAO
 // 1) Pergunta -> 2) minigame -> 3) ingrediente e XP -> 4) montagem
 
-if (!pergunta_ativa && !preparo_ativo) {
+if (!pergunta_ativa && !preparo_ativo && !selecao_ativa) {
     // MOVIMENTACAO
     var dx = keyboard_check(ord("D"))
            - keyboard_check(ord("A"))
@@ -129,184 +135,212 @@ if (!pergunta_ativa && !preparo_ativo) {
 	    frame_player = 0;
 	}
 	
-    // INTERACOES
+    // INTERACOES: chef, bancada, geladeira, fogao e estacoes.
     if (keyboard_check_pressed(ord("E"))) {
-        var perto = -1;
-        var menor = 99999;
-        for (var k = 0; k < array_length(est_x); k++) {
-            var dist = point_distance(player_x, player_y, est_x[k], est_y[k]);
-            if (dist < 120 && dist < menor) {
-                perto = k;
-                menor = dist;
-            }
-        }
-        if (perto >= 0) {
-            if (!missao_ativa) {
-                mensagem = "Fale com o Chef para iniciar uma missao!";
-            } else {
-                var m = missoes[indice_missao];
-                var encontrado = -1;
-                for (var a = 0; a < array_length(m.ingredientes); a++) {
-                    if (m.setores[a] == perto && !tem_ingrediente(m.ingredientes[a])) {
-                        encontrado = a;
-                        break;
-                    }
-                }
-                if (encontrado >= 0) {
-                    indice_pergunta = indice_missao * 3 + encontrado;
-                    var q = perguntas_missao[indice_pergunta];
-                    pergunta = q.pergunta;
-                    opcoes = q.opcoes;
-                    correta = q.correta;
-                    setor_atual = perto;
-                    pergunta_ativa = true;
+        if (point_distance(player_x,player_y,480,400)<85) {
+            if (jogo_concluido) mensagem="Chef: Parabens! As nove missoes foram concluidas!";
+            else if (!missao_ativa) {
+                missao_ativa=true; missao_concluida=false;
+                sacola=[]; ingredientes_coletados=0;
+                frigorifico_verificado=false; fogao_verificado=false;
+                for(var c=0;c<array_length(concluidos);c++) concluidos[c]=false;
+                tempo_total_missao=limites_tempo_missoes[indice_missao];
+                tempo_restante_missao=tempo_total_missao;
+                tempo_missao_rodando=true; falha_missao_visivel=0;
+                xp_inicio_missao=xp;
+                var m=missoes[indice_missao];
+                mensagem="Chef: Missao " + string(indice_missao+1)+" - "+m.nome;
+                if (m.livre) {
+                    mensagem_missao=((indice_missao==8)?"Escolha de 7 a 8 alimentos":"Escolha "+string(m.quantidade)+" alimentos")+" | kcal "+string(m.kcal_min)+"-"+string(m.kcal_max)+" | grupos: "+string_join_ext(", ",m.requisitos);
                 } else {
-                    mensagem = "Nenhum ingrediente pendente nesta estacao.";
+                    mensagem_missao="Colete: "+string_join_ext(", ",m.ingredientes);
                 }
+            } else mensagem="Chef: "+mensagem_missao;
+        } else if (player_x>=325 && player_x<=620 && player_y>=445 && player_y<=610) {
+            if (!missao_ativa) mensagem="Bancada: Fale com o Chef primeiro!";
+            else {
+                var avaliacao=avaliar_prato();
+                feedback_nutricional=avaliacao.texto;
+                if (avaliacao.aprovado) {
+                    // A geladeira e o fogao funcionam como pontos de consulta,
+                    // sem criar bloqueios artificiais na receita atual.
+                    iniciar_montagem();
+                } else mensagem="Bancada: "+avaliacao.texto;
             }
-        } else if (point_distance(player_x, player_y, 480, 400) < 90) {
-            if (jogo_concluido) {
-                mensagem = "Chef: Parabens! Todas as receitas concluidas!";
-            } else if (!missao_ativa) {
-                missao_ativa = true;
-                missao_concluida = false;
-                tempo_total_missao = limites_tempo_missoes[indice_missao];
-                tempo_restante_missao = tempo_total_missao;
-                tempo_missao_rodando = true;
-                falha_missao_visivel = 0;
-                xp_inicio_missao = xp;
-                var m = missoes[indice_missao];
-                mensagem = "Chef: Prepare " + m.nome + "!";
-                mensagem_missao = "Colete: " + m.ingredientes[0] + ", "
-                    + m.ingredientes[1] + ", " + m.ingredientes[2];
-            } else {
-                mensagem = "Chef: Prepare os ingredientes e monte na bancada!";
-            }
-        } else if (player_x >= 330 && player_x <= 630 &&
-                   player_y >= 475 && player_y <= 610) {
-            if (!missao_ativa) {
-                mensagem = "Bancada: Fale com o Chef primeiro!";
-            } else {
-                var m = missoes[indice_missao];
-                var completa = true;
-                for (var b = 0; b < array_length(m.ingredientes); b++) {
-                    if (!tem_ingrediente(m.ingredientes[b])) {
-                        completa = false;
-                        break;
-                    }
-                }
-                if (completa) iniciar_montagem();
-                else mensagem = "Bancada: Ainda faltam ingredientes!";
-            }
-        } else if (!missao_ativa) {
-            mensagem = "Aproxime-se de uma estacao, do Chef ou da bancada.";
-        }
-    }
-}
-
-// RESPOSTAS DAS PERGUNTAS
-if (pergunta_ativa) {
-    var escolha = -1;
-    if (keyboard_check_pressed(ord("1")) || keyboard_check_pressed(vk_numpad1)) escolha = 0;
-    if (keyboard_check_pressed(ord("2")) || keyboard_check_pressed(vk_numpad2)) escolha = 1;
-    if (keyboard_check_pressed(ord("3")) || keyboard_check_pressed(vk_numpad3)) escolha = 2;
-    if (escolha >= 0) {
-        if (escolha == correta) {
-            var posicao = indice_pergunta - indice_missao * 3;
-            iniciar_minigame_setor(setor_atual, posicao);
-            mensagem = "Resposta correta! Complete o desafio para coletar.";
+        } else if (point_distance(player_x,player_y,115,520)<105) {
+            if (missao_ativa) {
+                frigorifico_verificado=true;
+                mensagem="Geladeira: ingredientes disponiveis nas estacoes. Escolha com E.";
+            } else mensagem="Geladeira: fale com o Chef para iniciar.";
+        } else if (point_distance(player_x,player_y,835,520)<105) {
+            if(missao_ativa) {
+                fogao_verificado=true;
+                mensagem="Fogao: prepare proteinas e graos nos minigames das estacoes.";
+            } else mensagem="Fogao: fale com o Chef primeiro.";
         } else {
-            mensagem = "Resposta incorreta! Tente novamente na estacao.";
+            var perto=-1;
+            var menor=99999;
+            for(var k=0;k<array_length(est_x);k++) {
+                var distancia=point_distance(player_x,player_y,est_x[k],est_y[k]);
+                if(distancia<125 && distancia<menor) {perto=k;menor=distancia;}
+            }
+            if(perto>=0 && missao_ativa) abrir_estacao(perto);
+            else if(!missao_ativa) mensagem="Fale com o Chef para iniciar.";
+            else mensagem="Aproxime-se de uma estacao.";
         }
-        pergunta_ativa = false;
-        setor_atual = -1;
+    }
+    // R desfaz a ultima coleta (somente quando livre e sem outro painel).
+    if (keyboard_check_pressed(ord("R")) && missao_ativa && missoes[indice_missao].livre && array_length(sacola)>0) {
+        var ultimo=sacola[array_length(sacola)-1];
+        array_pop(sacola);
+        ingredientes_coletados=array_length(sacola);
+        mensagem=ultimo+" removido da sacola.";
     }
 }
 
-// VERDURAS - CORTE
+// SELECAO LIVRE DAS ESTACOES (teclas 1 a 9 e 0 para cancelar).
+if(selecao_ativa) {
+    if(keyboard_check_pressed(ord("0")) || keyboard_check_pressed(vk_escape)) selecao_ativa=false;
+    else {
+        var esc=-1;
+        for(var v=1;v<=9;v++) if(keyboard_check_pressed(ord("0")+v) || keyboard_check_pressed(vk_numpad0+v)) {esc=v-1;break;}
+        if(esc>=0 && esc<array_length(selecao_opcoes)) {
+            var idx=selecao_opcoes[esc];
+            selecao_ativa=false;
+            iniciar_escolha_ingrediente(idx,selecao_setor);
+        }
+    }
+}
+
+// PERGUNTAS SORTEADAS PELA FAIXA DE DIFICULDADE.
+if(pergunta_ativa && pergunta_bloqueio<=0) {
+    var escolha=-1;
+    if(keyboard_check_pressed(ord("1")) || keyboard_check_pressed(vk_numpad1)) escolha=0;
+    if(keyboard_check_pressed(ord("2")) || keyboard_check_pressed(vk_numpad2)) escolha=1;
+    if(keyboard_check_pressed(ord("3")) || keyboard_check_pressed(vk_numpad3)) escolha=2;
+    if(keyboard_check_pressed(ord("4")) || keyboard_check_pressed(vk_numpad4)) escolha=3;
+    if(escolha>=0) {
+        if(escolha==correta) {
+            iniciar_minigame_setor(setor_atual,indice_ingrediente_pendente);
+            mensagem="Resposta correta! Conclua o minigame.";
+        } else mensagem="Resposta incorreta! Tente novamente na estacao.";
+        pergunta_ativa=false;
+        setor_atual=-1;
+    }
+}
+
+// VERDURAS - CORTE: erros acumulados ate reinicio automatico.
 if (corte_ativo) {
     corte_posicao += corte_velocidade * corte_direcao;
     if (corte_posicao >= 100) { corte_posicao = 100; corte_direcao = -1; }
     if (corte_posicao <= 0) { corte_posicao = 0; corte_direcao = 1; }
     if (keyboard_check_pressed(vk_space)) {
         if (corte_posicao >= corte_zona_inicio && corte_posicao <= corte_zona_fim) {
-            corte_acertos++;
-            corte_velocidade += 1;
+            corte_acertos++; corte_velocidade += 1;
             mensagem_preparo = "CORTE PERFEITO!";
             if (corte_acertos >= 3) finalizar_ingrediente();
         } else {
             corte_erros++;
-            mensagem_preparo = "ERROU O CORTE! Tente novamente.";
+            mini_registrar_erro("Corte fora da zona!");
         }
     }
 }
-
-// GRAOS - COZIMENTO
+// GRAOS: passar do ponto ou clicar fora conta como erro.
 if (arroz_ativo) {
     arroz_progresso += arroz_velocidade;
     if (arroz_progresso >= 100) {
-        arroz_progresso = 0;
-        arroz_tentativas++;
-        mensagem_preparo = "PASSOU DO PONTO! Tente novamente.";
-    }
-    if (keyboard_check_pressed(vk_space)) {
+        arroz_progresso = 0; arroz_tentativas++;
+        mini_registrar_erro("Passou do ponto!");
+    } else if (keyboard_check_pressed(vk_space)) {
         if (arroz_progresso >= arroz_zona_inicio && arroz_progresso <= arroz_zona_fim) {
             finalizar_ingrediente();
         } else {
-            arroz_tentativas++;
-            arroz_progresso = 0;
-            mensagem_preparo = "FORA DO PONTO! Tente novamente.";
+            arroz_tentativas++; arroz_progresso = 0;
+            mini_registrar_erro("Fora do ponto!");
         }
     }
 }
 
-// PROTEINAS - CONTROLE DE TEMPERATURA
+ // PROTEINAS - CONTROLE DE TEMPERATURA
 if (frango_ativo) {
-    frango_dificuldade = 1 + (frango_tempo_ideal / frango_tempo_necessario) * 2;
-    frango_oscilacao = sin(current_time / 350) * 0.18 * frango_dificuldade;
-    frango_temperatura += frango_aquecimento * frango_dificuldade + frango_oscilacao;
-    if (keyboard_check(vk_up)) frango_temperatura += frango_ajuste;
-    if (keyboard_check(vk_down)) frango_temperatura -= frango_ajuste;
-    frango_temperatura = clamp(frango_temperatura, 0, 100);
-    if (frango_temperatura >= frango_zona_inicio && frango_temperatura <= frango_zona_fim) {
-        frango_tempo_ideal++;
-        mensagem_preparo = "TEMPERATURA IDEAL! Continue assim!";
-    } else if (frango_temperatura < frango_zona_inicio) {
-        mensagem_preparo = "MUITO FRIO! Aumente o fogo!";
-    } else {
-        mensagem_preparo = "MUITO QUENTE! Diminua o fogo!";
+
+    frango_dificuldade = 1
+        + (frango_tempo_ideal / frango_tempo_necessario) * 0.8;
+
+    frango_oscilacao = sin(current_time / 350)
+        * 0.12 * frango_dificuldade;
+
+    frango_temperatura += frango_aquecimento
+        * frango_dificuldade + frango_oscilacao;
+
+    if (keyboard_check(vk_up)) {
+        frango_temperatura += frango_ajuste;
     }
-    if (frango_tempo_ideal >= frango_tempo_necessario) finalizar_ingrediente();
+
+    if (keyboard_check(vk_down)) {
+        frango_temperatura -= frango_ajuste;
+    }
+
+    frango_temperatura = clamp(frango_temperatura, 0, 100);
+
+    if (frango_temperatura >= frango_zona_inicio
+        && frango_temperatura <= frango_zona_fim) {
+
+        frango_iniciou_aquecimento = true;
+        frango_fora_frames = 0;
+
+        frango_tempo_ideal++;
+
+        mensagem_preparo = "TEMPERATURA IDEAL! Continue assim!";
+
+        if (frango_tempo_ideal >= frango_tempo_necessario) {
+            finalizar_ingrediente();
+        }
+
+    } else {
+
+        if (frango_temperatura < frango_zona_inicio) {
+            mensagem_preparo = "AUMENTE O FOGO!";
+        } else {
+            mensagem_preparo = "DIMINUA O FOGO!";
+        }
+
+        if (frango_iniciou_aquecimento) {
+
+            frango_fora_frames++;
+
+            if (frango_fora_frames >= room_speed * 2) {
+
+                frango_fora_frames = 0;
+
+                mini_registrar_erro(
+                    "Temperatura fora da faixa por muito tempo!"
+                );
+            }
+        }
+    }
 }
 
-// FRUTAS - DESAFIO DE AGILIDADE: 10 ACERTOS EM 20 SEGUNDOS
+// FRUTAS: sequencia reiniciada apos esgotar erros do nivel.
 if (fruta_ativo) {
-    // Nao reutiliza a tecla que respondeu a pergunta nutricional.
     if (fruta_aguardando_soltar) {
         var alguma_tecla_num = false;
         for (var k = 0; k <= 9; k++) {
-            if (keyboard_check(ord("0") + k)
-                || keyboard_check(vk_numpad0 + k)) {
-                alguma_tecla_num = true;
-            }
+            if (keyboard_check(ord("0") + k) || keyboard_check(vk_numpad0 + k)) alguma_tecla_num = true;
         }
         if (!alguma_tecla_num) fruta_aguardando_soltar = false;
     } else {
         fruta_tempo--;
         var resposta_fruta = -1;
         for (var k = 0; k <= 9; k++) {
-            if (keyboard_check_pressed(ord("0") + k)
-                || keyboard_check_pressed(vk_numpad0 + k)) {
-                resposta_fruta = k;
-                break;
+            if (keyboard_check_pressed(ord("0") + k) || keyboard_check_pressed(vk_numpad0 + k)) {
+                resposta_fruta = k; break;
             }
         }
         if (resposta_fruta != -1) {
             if (resposta_fruta == fruta_alvo) {
                 fruta_acertos++;
                 if (fruta_acertos >= fruta_meta) {
-                    // Bonus de velocidade: o tempo considera a tentativa inteira,
-                    // inclusive os erros que zeraram a sequencia.
                     var segundos_usados = 20 - max(0, fruta_tempo) / room_speed;
                     if (segundos_usados <= 5) fruta_bonus_xp = 150;
                     else if (segundos_usados <= 8) fruta_bonus_xp = 100;
@@ -316,53 +350,41 @@ if (fruta_ativo) {
                     finalizar_ingrediente();
                 } else {
                     var anterior = fruta_alvo;
-                    do {
-                        fruta_alvo = irandom_range(0, 9);
-                    } until (fruta_alvo != anterior);
-                    mensagem_preparo = "BOA! Continue acertando os numeros!";
+                    do { fruta_alvo = irandom_range(0, 9); } until (fruta_alvo != anterior);
+                    mensagem_preparo = "BOA! Continue acertando!";
                 }
             } else {
-                // Errou: perde a sequencia, mas o tempo restante continua.
-                fruta_acertos = 0;
                 fruta_alvo = irandom_range(0, 9);
-                mensagem_preparo = "ERROU! Volta para 0/10. O tempo continua!";
+                mini_registrar_erro("Numero incorreto!");
             }
         }
+        if (fruta_ativo && fruta_tempo <= 0) mini_registrar_erro("Tempo de frutas esgotado!");
+        // Evita contagem negativa repetindo o mesmo erro em frames seguintes.
         if (fruta_ativo && fruta_tempo <= 0) {
-            fruta_acertos = 0;
-            fruta_bonus_xp = 0;
-            fruta_alvo = irandom_range(0, 9);
             fruta_tempo = 20 * room_speed;
+            fruta_acertos = 0;
             fruta_aguardando_soltar = true;
-            mensagem_preparo = "TEMPO ESGOTADO! Tente novamente: 10 acertos em 20 s.";
         }
     }
 }
-
 // LATICINIOS - DOSAGEM
 if (leite_ativo) {
-    if (keyboard_check(vk_space)) {
-        leite_nivel += leite_velocidade;
-        if (leite_nivel > 100) leite_nivel = 100;
-    }
+    if (keyboard_check(vk_space)) leite_nivel = min(100, leite_nivel + leite_velocidade);
     if (keyboard_check_released(vk_space)) {
-        if (leite_nivel >= 75 && leite_nivel <= 85) finalizar_ingrediente();
-        else {
-            leite_nivel = 0;
-            mensagem_preparo = "MEDIDA ERRADA! Segure ESPACO e tente de novo.";
-        }
+        if (leite_nivel >= leite_zona_inicio && leite_nivel <= leite_zona_fim) finalizar_ingrediente();
+        else { leite_nivel = 0; mini_registrar_erro("Dosagem incorreta!"); }
     }
 }
-
-// BEBIDAS - MISTURA ALTERNADA
+// BEBIDAS - MISTURA ALTERNADA; repeticao da mesma tecla e erro.
 if (bebida_ativo) {
     var batida = 0;
     if (keyboard_check_pressed(ord("A"))) batida = 1;
     if (keyboard_check_pressed(ord("D"))) batida = 2;
-    if (batida != 0 && batida != bebida_ultima_tecla) {
-        bebida_progresso++;
-        bebida_ultima_tecla = batida;
-        if (bebida_progresso >= 10) finalizar_ingrediente();
+    if (batida != 0) {
+        if (batida != bebida_ultima_tecla) {
+            bebida_progresso++; bebida_ultima_tecla = batida;
+            if (bebida_progresso >= bebida_meta) finalizar_ingrediente();
+        } else mini_registrar_erro("Repita alternando A e D!");
     }
 }
 
@@ -377,7 +399,7 @@ if (montagem_ativa) {
         }
     } else if (montagem_fase == 1) {
         var falhou = false;
-        if (montagem_cronometro <= 0) falhou = true;
+        if (montagem_cronometro <= 0) { mini_registrar_erro("Tempo da montagem esgotado!"); falhou = false; }
         else {
             var tecla_digitada = 0;
             if (keyboard_check_pressed(vk_up)) tecla_digitada = 1;
@@ -392,7 +414,7 @@ if (montagem_ativa) {
                         montagem_concluida = true;
                         tempo_missao_rodando = false;
                         var m = missoes[indice_missao];
-                        mensagem_conclusao = "PARABENS! MISSAO " + string(indice_missao + 1) + " DE 8 CONCLUIDA!";
+                        mensagem_conclusao = "PARABENS! MISSAO " + string(indice_missao + 1) + " DE " + string(array_length(missoes)) + " CONCLUIDA!";
                         tempo_mensagem_conclusao = room_speed * 4;
                         xp += m.bonus;
                         xp_ganho_missao = xp - xp_inicio_missao;
@@ -401,7 +423,7 @@ if (montagem_ativa) {
                         else if (xp_ganho_missao >= 400) classificacao_missao = "EXCELENTE!";
                         else if (xp_ganho_missao >= 300) classificacao_missao = "MUITO BOM!";
                         else classificacao_missao = "MISSAO CONCLUIDA!";
-                        mensagem = "Receita concluida! +" + string(m.bonus) + " XP!";
+                        mensagem = feedback_nutricional + " +" + string(m.bonus) + " XP!";
                         sacola = [];
                         ingredientes_coletados = 0;
                         preparo_ativo = false;
@@ -420,7 +442,7 @@ if (montagem_ativa) {
                 } else {
                     montagem_erros++;
                     montagem_posicao = 0;
-                    if (montagem_erros >= 3) falhou = true;
+                    mini_registrar_erro("Sequencia de setas incorreta!");
                 }
             }
         }
