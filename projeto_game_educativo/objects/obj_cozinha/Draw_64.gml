@@ -161,25 +161,157 @@ draw_rectangle(0, 0, W, 157, false);
 draw_set_color(cor_ouro);
 draw_text_transformed(24, 15, "KITCHENRUSH", 1.65, 1.65, 0);
 draw_set_color(c_white);
-draw_text(26, 52, "Cargo: " + cargo + "  |  XP: " + string(xp));
+draw_text(26, 49, "Cargo: " + cargo);
+
+// ========================================
+// BARRA DE XP - PROGRESSAO REAL
+// ========================================
+
+// Define o intervalo de XP do cargo atual
+var xp_inicio = 0;
+var xp_meta = 100;
+
+if (xp >= 500) {
+    xp_inicio = 500;
+    xp_meta = 500;
+}
+else if (xp >= 250) {
+    xp_inicio = 250;
+    xp_meta = 500;
+}
+else if (xp >= 100) {
+    xp_inicio = 100;
+    xp_meta = 250;
+}
+
+// Calcula a porcentagem da barra
+var progresso_xp = 0;
+
+if (xp >= 500) {
+    progresso_xp = 1;
+}
+else {
+    progresso_xp = clamp(
+        (xp - xp_inicio) / (xp_meta - xp_inicio),
+        0,
+        1
+    );
+}
+// Icone de experiencia
+draw_set_color(c_white);
+draw_sprite(spr_xp, 0, 40, 83);
+
+// Posicao e tamanho da barra
+var barra_x = 65;
+var barra_y = 77;
+var barra_largura = 260;
+var barra_altura = 12;
+
+// Fundo da barra
+draw_set_color(make_color_rgb(65, 76, 70));
+
+draw_rectangle(
+    barra_x,
+    barra_y,
+    barra_x + barra_largura,
+    barra_y + barra_altura,
+    false
+);
+
+// Preenchimento dourado
+draw_set_color(cor_ouro);
+
+draw_rectangle(
+    barra_x,
+    barra_y,
+    barra_x + barra_largura * progresso_xp,
+    barra_y + barra_altura,
+    false
+);
+
+// Borda dourada da barra
+draw_set_color(cor_ouro);
+
+draw_rectangle(
+    barra_x - 1,
+    barra_y - 1,
+    barra_x + barra_largura + 1,
+    barra_y + barra_altura + 1,
+    true
+);
+
+// Indicador de progresso de XP
+draw_set_color(c_white);
+
+var texto_xp;
+
+if (xp >= 500) {
+    texto_xp = "NIVEL MAXIMO";
+} else {
+    texto_xp = string(xp) + " / " + string(xp_meta) + " XP";
+}
+
+draw_text(
+    barra_x + barra_largura + 15,
+    barra_y - 2,
+    texto_xp
+);
+
+// Restaura a cor
+draw_set_color(c_white);
+
+// ========================================
+// CONTADOR VISUAL DE MOEDAS
+// ========================================
+
+// Posicao do contador na interface
+var moeda_x = 570;
+var moeda_y = 52;
+
+// Desenha a moeda animada
+draw_set_color(c_white);
+
+draw_sprite_ext(
+    spr_moeda,
+    floor(current_time / 125) mod 8,
+    moeda_x,
+    moeda_y,
+    0.5,
+    0.5,
+    0,
+    c_white,
+    1
+);
+
+// Contador demonstrativo
+// Ainda nao existe integracao com a economia do jogo
+draw_set_color(cor_ouro);
+draw_text(
+    moeda_x + 25,
+    moeda_y - 8,
+    "0"
+);
+
+// Restaura a cor
+draw_set_color(c_white);
 
 if (missao_ativa && !jogo_concluido) {
     var missao_topo = missoes[indice_missao];
     draw_set_color(cor_ouro);
-    draw_text(26, 82, "MISSAO " + string(indice_missao + 1) + "/" + string(array_length(missoes))
+    draw_text(26, 108, "MISSAO " + string(indice_missao + 1) + "/" + string(array_length(missoes))
                          + "  -  " + missao_topo.nome);
     draw_set_color(c_white);
     if (missao_topo.nivel != "final") {
-        if (missao_topo.livre) draw_text(26, 107, "Meta: " + string(missao_topo.kcal_min) + "-" + string(missao_topo.kcal_max) + " kcal | " + missao_topo.dica);
-        else draw_text(26, 107, "Dica: " + missao_topo.dica);
+        if (missao_topo.livre) draw_text(26, 132, "Meta: " + string(missao_topo.kcal_min) + "-" + string(missao_topo.kcal_max) + " kcal | " + missao_topo.dica);
+        else draw_text(26, 132, "Dica: " + missao_topo.dica);
     }
-    else draw_text(26, 107, "Sem dicas | Requisitos: 7-8 itens; proteina, carboidrato, fruta, 2 vegetais; 450-650 kcal");
+    else draw_text(26, 132, "Sem dicas | Requisitos: 7-8 itens; proteina, carboidrato, fruta, 2 vegetais; 450-650 kcal");
 } else {
     draw_set_color(cor_claro);
     if (jogo_concluido) {
-        draw_text(26, 85, "Todas as receitas concluidas. Parabens!");
+        draw_text(26, 108, "Todas as receitas concluidas. Parabens!");
     } else {
-        draw_text(26, 85, "Encontre o Chef para iniciar sua proxima receita.");
+        draw_text(26, 108, "Encontre o Chef para iniciar sua proxima receita.");
     }
 }
 
@@ -346,7 +478,7 @@ if (pergunta_ativa) {
 	draw_set_color(c_white);
 
 	draw_sprite_ext(
-	    spr_player_pensando,
+	    spr_player_baixo,
 	    0,
 	    930,
 	    420,
