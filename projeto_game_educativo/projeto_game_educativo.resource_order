@@ -26,6 +26,7 @@
     {"name":"spr_hiro_pensando","order":32,"path":"sprites/spr_hiro_pensando/spr_hiro_pensando.yy",},
     {"name":"spr_menu_fundo","order":18,"path":"sprites/spr_menu_fundo/spr_menu_fundo.yy",},
     {"name":"spr_menu_instrucoes","order":19,"path":"sprites/spr_menu_instrucoes/spr_menu_instrucoes.yy",},
+    {"name":"spr_moeda","order":38,"path":"sprites/spr_moeda/spr_moeda.yy",},
     {"name":"spr_pia","order":23,"path":"sprites/spr_pia/spr_pia.yy",},
     {"name":"spr_player_baixo","order":4,"path":"sprites/spr_player_baixo/spr_player_baixo.yy",},
     {"name":"spr_player_cima","order":5,"path":"sprites/spr_player_cima/spr_player_cima.yy",},
@@ -36,5 +37,6 @@
     {"name":"spr_sofia_normal","order":34,"path":"sprites/spr_sofia_normal/spr_sofia_normal.yy",},
     {"name":"spr_sofia_orientando","order":35,"path":"sprites/spr_sofia_orientando/spr_sofia_orientando.yy",},
     {"name":"spr_sofia_pensando","order":36,"path":"sprites/spr_sofia_pensando/spr_sofia_pensando.yy",},
+    {"name":"spr_xp","order":37,"path":"sprites/spr_xp/spr_xp.yy",},
   ],
 }
