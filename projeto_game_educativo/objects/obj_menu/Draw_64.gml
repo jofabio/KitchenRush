@@ -7,7 +7,11 @@ var h = display_get_gui_height();
 draw_set_color(c_white);
 draw_set_alpha(1);
 
-if (menu_tela == 0) {
+if (menu_tela == 2) {
+
+    login_draw();
+
+} else if (menu_tela == 0) {
 
     draw_sprite_stretched(spr_menu_fundo, 0, 0, 0, w, h);
 
@@ -44,3 +48,15 @@ if (menu_tela == 0) {
 
 draw_set_color(c_white);
 draw_set_alpha(1);
+
+// Nome do jogador logado no menu principal
+if (menu_tela == 0) {
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
+    var texto_jogador = "Jogador: " + global.usuario + "   (F1: trocar de usuario)";
+    draw_set_color(c_black);
+    draw_text(21, 17, texto_jogador);
+    draw_set_color(c_white);
+    draw_text(20, 16, texto_jogador);
+    draw_set_color(c_white);
+}

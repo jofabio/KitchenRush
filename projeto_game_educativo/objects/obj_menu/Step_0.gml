@@ -4,7 +4,12 @@ var w = display_get_gui_width();
 var h = display_get_gui_height();
 var confirmar = false;
 
-if (menu_tela == 0) {
+if (menu_tela == 2) {
+
+    // Tela de login / criacao de conta
+    login_step();
+
+} else if (menu_tela == 0) {
 
     // Navegacao pelo teclado
     if (keyboard_check_pressed(vk_down) ||
@@ -72,3 +77,6 @@ if (menu_tela == 0) {
         menu_tela = 0;
     }
 }
+
+// F1 no menu principal: trocar de usuario
+if (menu_tela == 0 && keyboard_check_pressed(vk_f1)) login_sair();

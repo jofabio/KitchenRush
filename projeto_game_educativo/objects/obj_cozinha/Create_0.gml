@@ -628,7 +628,7 @@ finalizar_ingrediente = function() {
     else nome=m.ingredientes[ingrediente_pendente];
     if(coletar_ingrediente(nome)) {
         var adicional=(setor_pendente==0)?fruta_bonus_xp:0;
-        xp+=100+adicional;
+        ganhar_xp(100+adicional);
         mensagem=nome+" coletado! +"+string(100+adicional)+" XP";
     }
     // A luz verde indica que a estacao participou da missao.
@@ -637,9 +637,7 @@ finalizar_ingrediente = function() {
     fruta_ativo=false; leite_ativo=false; bebida_ativo=false;
     fruta_bonus_xp=0; minigame_ativo=false; preparo_ativo=false;
     ingrediente_pendente=-1; setor_pendente=-1;
-    if (xp>=500) cargo="Chef de cozinha";
-    else if (xp>=250) cargo="Cozinheiro";
-    else if (xp>=100) cargo="Assistente de cozinha";
+    // cargo atualizado dentro de ganhar_xp()
     if(ingredientes_coletados==m.quantidade || (indice_missao==8 && ingredientes_coletados>=m.quantidade_min)) {
         mensagem_missao=(indice_missao==8 && ingredientes_coletados<m.quantidade) ? "Ja pode finalizar com 7 ou coletar mais 1 ingrediente." : "Sacola completa! Confira o prato na bancada.";
     }
@@ -721,3 +719,344 @@ chef_tempo = 0;
 // Duracao inicial: 4 segundos
 chef_duracao = room_speed *6;
 
+
+// =====================================================================
+// ECONOMIA, PROGRESSAO E LOJA DE SKINS  (Integrante 2)
+// Tudo que e numero de balanceamento fica neste bloco.
+// =====================================================================
+
+// ---------- CONFIGURACAO ----------
+// XP total necessario para cada cargo. O XP por ingrediente (100) e o bonus
+// das frutas continuam em finalizar_ingrediente; o bonus da missao vem de m.bonus.
+cargos_xp = [
+    { xp: 0,    nome: "Estagiario" },
+    { xp: 1000, nome: "Assistente de cozinha" },
+    { xp: 3000, nome: "Cozinheiro" },
+    { xp: 6000, nome: "Chef de cozinha" }
+];
+
+// Se false, o XP volta a zero a cada abertura do jogo (so as moedas e a loja persistem).
+persistir_xp = true;
+// Cada usuario tem o proprio arquivo de save. Sem login (ex.: testando a room direto), usa "convidado".
+nome_jogador = (variable_global_exists("usuario") && global.usuario != "") ? global.usuario : "convidado";
+arquivo_save = "save_" + nome_jogador + ".json";
+
+// Moedas ganhas ao concluir uma missao, conforme a dificuldade dela.
+moedas_da_missao = function(_m) {
+    switch (_m.nivel) {
+        case "facil":   return 40;
+        case "medio":   return 80;
+        case "dificil": return 120;
+        case "final":   return 250;
+    }
+    return 40;
+};
+
+// Categorias da loja. So "roupa" tem itens por enquanto (as 5 skins + o visual padrao).
+categorias_loja = [
+    { id: "roupa",     nome: "Roupas"     },
+    { id: "chapeu",    nome: "Chapeus"    },
+    { id: "oculos",    nome: "Oculos"     },
+    { id: "acessorio", nome: "Acessorios" }
+];
+
+// Cada item tem uma sprite por direcao (64x64, origem 32,64, 4 frames).
+itens_loja = [
+    { id: "padrao", nome: "Estagiario (padrao)", cat: "roupa", preco: 0,
+      spr: { baixo: spr_player_baixo, cima: spr_player_cima, direita: spr_player_direita, esquerda: spr_player_esquerda } },
+    { id: "cozinheiro", nome: "Cozinheiro", cat: "roupa", preco: 100,
+      spr: { baixo: spr_skin_cozinheiro_baixo, cima: spr_skin_cozinheiro_cima, direita: spr_skin_cozinheiro_direita, esquerda: spr_skin_cozinheiro_esquerda } },
+    { id: "urbano", nome: "Urbano", cat: "roupa", preco: 150,
+      spr: { baixo: spr_skin_urbano_baixo, cima: spr_skin_urbano_cima, direita: spr_skin_urbano_direita, esquerda: spr_skin_urbano_esquerda } },
+    { id: "oriental", nome: "Oriental", cat: "roupa", preco: 200,
+      spr: { baixo: spr_skin_oriental_baixo, cima: spr_skin_oriental_cima, direita: spr_skin_oriental_direita, esquerda: spr_skin_oriental_esquerda } },
+    { id: "academico", nome: "Academico", cat: "roupa", preco: 250,
+      spr: { baixo: spr_skin_academico_baixo, cima: spr_skin_academico_cima, direita: spr_skin_academico_direita, esquerda: spr_skin_academico_esquerda } },
+    { id: "lendario", nome: "Lendario", cat: "roupa", preco: 400,
+      spr: { baixo: spr_skin_lendario_baixo, cima: spr_skin_lendario_cima, direita: spr_skin_lendario_direita, esquerda: spr_skin_lendario_esquerda } }
+
+    // Exemplo para quando existirem sprites de chapeu/oculos/acessorio (mesmo formato 64x64,
+    // origem 32,64, 4 frames, uma sprite por direcao). Basta descomentar e ajustar:
+    // ,{ id: "chapeu_chef", nome: "Chapeu de Chef", cat: "chapeu", preco: 120,
+    //   spr: { baixo: spr_chapeu_chef_baixo, cima: spr_chapeu_chef_cima, direita: spr_chapeu_chef_direita, esquerda: spr_chapeu_chef_esquerda } }
+];
+
+// ---------- ESTADO E SAVE ----------
+moedas_ganhas_missao = 0;
+aviso_cargo = "";
+aviso_cargo_tempo = 0;
+loja_aberta = false;
+loja_cat = 0;
+loja_sel = 0;
+loja_msg = "";
+
+economia_estado_inicial = function() {
+    return {
+        xp: 0,
+        moedas: 0,
+        missao: 0,
+        comprados: ["padrao"],
+        equipado: { roupa: "padrao", chapeu: "", oculos: "", acessorio: "" }
+    };
+};
+
+carregar_economia = function() {
+    var _s = economia_estado_inicial();
+    if (!file_exists(arquivo_save)) return _s;
+    try {
+        var _f = file_text_open_read(arquivo_save);
+        var _txt = "";
+        while (!file_text_eof(_f)) { _txt += file_text_read_string(_f); file_text_readln(_f); }
+        file_text_close(_f);
+        var _d = json_parse(_txt);
+        if (is_struct(_d)) {
+            if (variable_struct_exists(_d, "xp") && is_real(_d.xp)) _s.xp = _d.xp;
+            if (variable_struct_exists(_d, "moedas") && is_real(_d.moedas)) _s.moedas = _d.moedas;
+            if (variable_struct_exists(_d, "missao") && is_real(_d.missao)) _s.missao = _d.missao;
+            if (variable_struct_exists(_d, "comprados") && is_array(_d.comprados)) {
+                for (var i = 0; i < array_length(_d.comprados); i++) {
+                    if (!array_contains(_s.comprados, _d.comprados[i])) array_push(_s.comprados, _d.comprados[i]);
+                }
+            }
+            if (variable_struct_exists(_d, "equipado") && is_struct(_d.equipado)) {
+                var _cats = ["roupa", "chapeu", "oculos", "acessorio"];
+                for (var c = 0; c < array_length(_cats); c++) {
+                    if (!variable_struct_exists(_d.equipado, _cats[c])) continue;
+                    var _v = variable_struct_get(_d.equipado, _cats[c]);
+                    // so aceita item que o jogador realmente tem
+                    if (is_string(_v) && array_contains(_s.comprados, _v)) variable_struct_set(_s.equipado, _cats[c], _v);
+                }
+            }
+        }
+    } catch (_e) {
+        // arquivo corrompido: comeca do zero
+        _s = economia_estado_inicial();
+    }
+    return _s;
+};
+
+salvar_economia = function() {
+    var _d = {
+        xp: persistir_xp ? xp : 0,
+        moedas: global.save.moedas,
+        missao: indice_missao,
+        comprados: global.save.comprados,
+        equipado: global.save.equipado
+    };
+    var _f = file_text_open_write(arquivo_save);
+    file_text_write_string(_f, json_stringify(_d));
+    file_text_close(_f);
+};
+
+// ---------- XP E CARGO ----------
+nivel_cargo = function(_xp) {
+    var _i = 0;
+    for (var n = 0; n < array_length(cargos_xp); n++) {
+        if (_xp >= cargos_xp[n].xp) _i = n;
+    }
+    return _i;
+};
+
+atualizar_cargo = function() {
+    cargo = cargos_xp[nivel_cargo(xp)].nome;
+};
+
+// Faixa de XP do cargo atual, usada pela barra de XP do HUD.
+xp_faixa = function() {
+    var _i = nivel_cargo(xp);
+    if (_i >= array_length(cargos_xp) - 1) {
+        return { inicio: cargos_xp[_i].xp, meta: cargos_xp[_i].xp, maximo: true };
+    }
+    return { inicio: cargos_xp[_i].xp, meta: cargos_xp[_i + 1].xp, maximo: false };
+};
+
+ganhar_xp = function(_qtd) {
+    var _antes = nivel_cargo(xp);
+    xp += _qtd;
+    atualizar_cargo();
+    if (nivel_cargo(xp) > _antes) {
+        // troca imediata para o mentor do novo nivel
+        chef_sprite = chef_sprite_do_estado(chef_estado);
+        chef_frame = 0;
+        aviso_cargo = "NOVO CARGO: " + cargo + "!   Mentor: " + chef_atual().nome;
+        aviso_cargo_tempo = room_speed * 4;
+    }
+    salvar_economia();
+};
+
+// ---------- MOEDAS ----------
+ganhar_moedas = function(_qtd) {
+    global.save.moedas += _qtd;
+    salvar_economia();
+};
+
+gastar_moedas = function(_qtd) {
+    if (global.save.moedas < _qtd) return false;
+    global.save.moedas -= _qtd;
+    salvar_economia();
+    return true;
+};
+
+// ---------- ITENS: COMPRA, EQUIPAR, DESEQUIPAR ----------
+item_buscar = function(_id) {
+    for (var i = 0; i < array_length(itens_loja); i++) {
+        if (itens_loja[i].id == _id) return itens_loja[i];
+    }
+    return undefined;
+};
+
+itens_da_categoria = function(_cat) {
+    var _lista = [];
+    for (var i = 0; i < array_length(itens_loja); i++) {
+        if (itens_loja[i].cat == _cat) array_push(_lista, itens_loja[i]);
+    }
+    return _lista;
+};
+
+item_comprado = function(_id) {
+    return array_contains(global.save.comprados, _id);
+};
+
+item_equipado = function(_id) {
+    var _it = item_buscar(_id);
+    if (_it == undefined) return false;
+    return variable_struct_get(global.save.equipado, _it.cat) == _id;
+};
+
+item_equipar = function(_id) {
+    if (!item_comprado(_id)) return { ok: false, erro: "Compre o item primeiro." };
+    var _it = item_buscar(_id);
+    // equipa um item por categoria; categorias diferentes ficam equipadas juntas
+    variable_struct_set(global.save.equipado, _it.cat, _id);
+    salvar_economia();
+    return { ok: true, msg: "Equipado!" };
+};
+
+item_desequipar = function(_cat) {
+    // roupa volta para o visual padrao; as demais categorias ficam vazias
+    variable_struct_set(global.save.equipado, _cat, (_cat == "roupa") ? "padrao" : "");
+    salvar_economia();
+};
+
+item_comprar = function(_id) {
+    var _it = item_buscar(_id);
+    if (_it == undefined)     return { ok: false, erro: "Item nao existe." };
+    if (item_comprado(_id))   return { ok: false, erro: "Voce ja tem este item." };
+    if (!gastar_moedas(_it.preco)) return { ok: false, erro: "Moedas insuficientes." };
+    array_push(global.save.comprados, _id);
+    salvar_economia();
+    item_equipar(_id); // ao comprar, ja equipa
+    return { ok: true, msg: "Comprado e equipado!" };
+};
+
+// Enter na loja: equipa se estiver sem usar, tira se estiver equipado.
+item_alternar = function(_id) {
+    if (!item_equipado(_id)) return item_equipar(_id);
+    var _it = item_buscar(_id);
+    if (_id == "padrao") return { ok: false, erro: "Este ja e o visual padrao." };
+    item_desequipar(_it.cat);
+    return { ok: true, msg: "Removido." };
+};
+
+// ---------- DESENHO DO PERSONAGEM COM OS ITENS EQUIPADOS ----------
+dir_do_sprite = function(_spr) {
+    if (_spr == spr_player_cima) return "cima";
+    if (_spr == spr_player_direita) return "direita";
+    if (_spr == spr_player_esquerda) return "esquerda";
+    return "baixo";
+};
+
+// _equip: struct { roupa, chapeu, oculos, acessorio } com os ids equipados.
+// A ordem garante: corpo/roupa embaixo e os acessorios por cima.
+desenhar_personagem = function(_x, _y, _esc, _dir, _frame, _equip) {
+    var _ordem = ["roupa", "oculos", "chapeu", "acessorio"];
+    for (var i = 0; i < array_length(_ordem); i++) {
+        var _id = variable_struct_get(_equip, _ordem[i]);
+        if (_id == "" && _ordem[i] == "roupa") _id = "padrao";
+        if (_id == "") continue;
+        var _it = item_buscar(_id);
+        if (_it == undefined) continue;
+        draw_sprite_ext(variable_struct_get(_it.spr, _dir), _frame, _x, _y, _esc, _esc, 0, c_white, 1);
+    }
+};
+
+// ---------- LOJA: ABRIR E NAVEGAR (chamada todo frame no Step) ----------
+economia_step = function() {
+    if (aviso_cargo_tempo > 0) aviso_cargo_tempo--;
+
+    if (!loja_aberta) {
+        // so abre entre missoes, para nao roubar tempo do cronometro
+        if (keyboard_check_pressed(ord("L")) && !missao_ativa && !pergunta_ativa && !preparo_ativo && !selecao_ativa) {
+            loja_aberta = true;
+            loja_cat = 0;
+            loja_sel = 0;
+            loja_msg = "";
+        }
+        return;
+    }
+
+    if (keyboard_check_pressed(vk_escape) || keyboard_check_pressed(ord("L"))) {
+        loja_aberta = false;
+        return;
+    }
+
+    var _nc = array_length(categorias_loja);
+    if (keyboard_check_pressed(vk_right) || keyboard_check_pressed(ord("D"))) {
+        loja_cat = (loja_cat + 1) mod _nc; loja_sel = 0; loja_msg = "";
+    }
+    if (keyboard_check_pressed(vk_left) || keyboard_check_pressed(ord("A"))) {
+        loja_cat = (loja_cat - 1 + _nc) mod _nc; loja_sel = 0; loja_msg = "";
+    }
+
+    var _lista = itens_da_categoria(categorias_loja[loja_cat].id);
+    var _n = array_length(_lista);
+    if (_n == 0) return;
+
+    if (keyboard_check_pressed(vk_down) || keyboard_check_pressed(ord("S"))) { loja_sel = (loja_sel + 1) mod _n; loja_msg = ""; }
+    if (keyboard_check_pressed(vk_up)   || keyboard_check_pressed(ord("W"))) { loja_sel = (loja_sel - 1 + _n) mod _n; loja_msg = ""; }
+
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_space)) {
+        var _it = _lista[loja_sel];
+        var _r = item_comprado(_it.id) ? item_alternar(_it.id) : item_comprar(_it.id);
+        loja_msg = _r.ok ? _r.msg : _r.erro;
+    }
+};
+
+// ---------- INICIALIZACAO ----------
+global.save = carregar_economia();
+xp = persistir_xp ? global.save.xp : 0;
+atualizar_cargo();
+// Retoma da missao salva. Se o jogador ja tinha terminado todas, comeca um novo ciclo (XP, moedas e itens ficam).
+indice_missao = global.save.missao;
+if (indice_missao < 0 || indice_missao >= array_length(missoes)) indice_missao = 0;
+
+
+// =====================================================================
+// MENTOR POR NIVEL: o chef da cozinha muda conforme o cargo do jogador
+// Ordem = nivel do cargo (0 Estagiario, 1 Assistente, 2 Cozinheiro, 3 Chef).
+// Para trocar a ordem, basta reordenar os itens da lista.
+// =====================================================================
+chefs_por_nivel = [
+    { nome: "CHEF",    normal: spr_chef_normal,    pensando: spr_chef_pensando,    orientando: spr_chef_orientando,    cruzados: spr_chef_bracos_cruzados },
+    { nome: "GENNARO", normal: spr_gennaro_normal, pensando: spr_gennaro_pensando, orientando: spr_gennaro_orientando, cruzados: spr_gennaro_bracos_cruzados },
+    { nome: "HIRO",    normal: spr_hiro_normal,    pensando: spr_hiro_pensando,    orientando: spr_hiro_orientando,    cruzados: spr_hiro_bracos_cruzados },
+    { nome: "SOFIA",   normal: spr_sofia_normal,   pensando: spr_sofia_pensando,   orientando: spr_sofia_orientando,   cruzados: spr_sofia_bracos_cruzados }
+];
+
+chef_atual = function() {
+    return chefs_por_nivel[min(nivel_cargo(xp), array_length(chefs_por_nivel) - 1)];
+};
+
+// Estados da animacao: 0 normal, 1 pensando, 2 orientando, 3 bracos cruzados
+chef_sprite_do_estado = function(_estado) {
+    var _c = chef_atual();
+    switch (_estado) {
+        case 1: return _c.pensando;
+        case 2: return _c.orientando;
+        case 3: return _c.cruzados;
+    }
+    return _c.normal;
+};
+
+// Ao abrir o jogo, ja comeca com o mentor do nivel salvo
+chef_sprite = chef_sprite_do_estado(chef_estado);

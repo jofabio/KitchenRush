@@ -144,13 +144,13 @@ draw_sprite_ext(chef_sprite, floor(chef_frame), chef_gui_x, chef_gui_y,
                 1.23, 1.23, 0, c_white, 1);
 draw_set_color(cor_escuro);
 draw_set_halign(fa_center);
-draw_text(chef_gui_x, chef_gui_y - 63, "CHEF");
+draw_text(chef_gui_x, chef_gui_y - 63, chef_atual().nome);
 draw_set_halign(fa_left);
 
 draw_set_color(c_white);
-draw_sprite_ext(sprite_player, floor(frame_player),
-                ui_map_x(player_x), ui_map_y(player_y),
-                1.23, 1.23, 0, c_white, 1);
+desenhar_personagem(ui_map_x(player_x), ui_map_y(player_y), 1.23,
+                    dir_do_sprite(sprite_player), floor(frame_player),
+                    global.save.equipado);
 
 // -------------------------------------------------------------
 // 6. BARRA SUPERIOR: IDENTIDADE, MISSAO E TEMPO
@@ -161,42 +161,18 @@ draw_rectangle(0, 0, W, 157, false);
 draw_set_color(cor_ouro);
 draw_text_transformed(24, 15, "KITCHENRUSH", 1.65, 1.65, 0);
 draw_set_color(c_white);
-draw_text(26, 49, "Cargo: " + cargo);
+draw_text(26, 49, "Cargo: " + cargo + "   |   Jogador: " + nome_jogador);
 
 // ========================================
 // BARRA DE XP - PROGRESSAO REAL
 // ========================================
 
-// Define o intervalo de XP do cargo atual
-var xp_inicio = 0;
-var xp_meta = 100;
+// Faixa de XP do cargo atual (limites em cargos_xp, no Create)
+var faixa_xp = xp_faixa();
+var xp_inicio = faixa_xp.inicio;
+var xp_meta = faixa_xp.meta;
+var progresso_xp = faixa_xp.maximo ? 1 : clamp((xp - xp_inicio) / (xp_meta - xp_inicio), 0, 1);
 
-if (xp >= 500) {
-    xp_inicio = 500;
-    xp_meta = 500;
-}
-else if (xp >= 250) {
-    xp_inicio = 250;
-    xp_meta = 500;
-}
-else if (xp >= 100) {
-    xp_inicio = 100;
-    xp_meta = 250;
-}
-
-// Calcula a porcentagem da barra
-var progresso_xp = 0;
-
-if (xp >= 500) {
-    progresso_xp = 1;
-}
-else {
-    progresso_xp = clamp(
-        (xp - xp_inicio) / (xp_meta - xp_inicio),
-        0,
-        1
-    );
-}
 // Icone de experiencia
 draw_set_color(c_white);
 draw_sprite(spr_xp, 0, 40, 83);
@@ -245,7 +221,7 @@ draw_set_color(c_white);
 
 var texto_xp;
 
-if (xp >= 500) {
+if (faixa_xp.maximo) {
     texto_xp = "NIVEL MAXIMO";
 } else {
     texto_xp = string(xp) + " / " + string(xp_meta) + " XP";
@@ -283,13 +259,12 @@ draw_sprite_ext(
     1
 );
 
-// Contador demonstrativo
-// Ainda nao existe integracao com a economia do jogo
+// Saldo de moedas (global.save.moedas)
 draw_set_color(cor_ouro);
 draw_text(
     moeda_x + 25,
     moeda_y - 8,
-    "0"
+    string(global.save.moedas)
 );
 
 // Restaura a cor
@@ -444,7 +419,7 @@ draw_roundrect(938, 646, 1265, 710, false);
 draw_set_color(cor_ouro);
 draw_text(955, 654, "CONTROLES");
 draw_set_color(c_white);
-draw_text(955, 674, "WASD / SETAS   Mover");
+draw_text(955, 674, "WASD / SETAS  Mover   |   L  Loja");
 draw_text(955, 693, "E  Interagir   |   1-4  Responder");
 
 // -------------------------------------------------------------
@@ -683,6 +658,8 @@ if (tempo_mensagem_conclusao > 0) {
     draw_set_color(make_color_rgb(137, 230, 155));
     draw_text_transformed(cx, cy+2, "+"+string(xp_ganho_missao)+" XP", 1.7, 1.7, 0);
     draw_set_color(cor_ouro);
+    draw_text_transformed(cx, cy+34, "+"+string(moedas_ganhas_missao)+" moedas", 1.2, 1.2, 0);
+    draw_set_color(cor_ouro);
     draw_text(cx, cy+60, classificacao_missao);
     draw_set_color(c_white);
     draw_text(cx, cy+111, "Volte ao Chef para continuar!");
@@ -797,3 +774,131 @@ draw_sprite_ext(
     c_white,
     1
 );
+
+
+// -------------------------------------------------------------
+// 16. AVISO DE NOVO CARGO + LOJA DE SKINS (por cima de tudo)
+// -------------------------------------------------------------
+if (aviso_cargo_tempo > 0) {
+    draw_set_halign(fa_center);
+    draw_set_valign(fa_middle);
+    draw_set_color(cor_escuro);
+    draw_roundrect(W/2 - 340, 166, W/2 + 340, 206, false);
+    draw_set_color(cor_ouro);
+    draw_roundrect(W/2 - 340, 166, W/2 + 340, 206, true);
+    draw_text_transformed(W/2, 187, aviso_cargo, 1.2, 1.2, 0);
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
+}
+
+if (loja_aberta) {
+    // fundo escurecido
+    draw_set_alpha(0.78);
+    draw_set_color(c_black);
+    draw_rectangle(0, 157, W, 637, false);
+    draw_set_alpha(1);
+
+    // painel principal
+    draw_set_color(cor_painel);
+    draw_roundrect(190, 168, 1090, 628, false);
+    draw_set_color(cor_ouro);
+    draw_roundrect(190, 168, 1090, 628, true);
+
+    // titulo e saldo
+    draw_set_color(cor_ouro);
+    draw_text_transformed(215, 182, "LOJA DA COZINHA", 1.4, 1.4, 0);
+    draw_set_color(c_white);
+    draw_sprite_ext(spr_moeda, floor(current_time / 125) mod 8, 985, 197, 0.5, 0.5, 0, c_white, 1);
+    draw_set_color(cor_ouro);
+    draw_text(1008, 189, string(global.save.moedas));
+
+    // abas de categoria
+    for (var lj_c = 0; lj_c < array_length(categorias_loja); lj_c++) {
+        var lj_tx = 215 + lj_c * 210;
+        var lj_ativa = (lj_c == loja_cat);
+        draw_set_color(lj_ativa ? cor_ouro : cor_escuro);
+        draw_roundrect(lj_tx, 228, lj_tx + 196, 262, false);
+        draw_set_halign(fa_center);
+        draw_set_valign(fa_middle);
+        draw_set_color(lj_ativa ? cor_escuro : c_white);
+        draw_text(lj_tx + 98, 245, categorias_loja[lj_c].nome);
+        draw_set_halign(fa_left);
+        draw_set_valign(fa_top);
+    }
+
+    // lista de itens da categoria
+    var lj_lista = itens_da_categoria(categorias_loja[loja_cat].id);
+    var lj_n = array_length(lj_lista);
+
+    if (lj_n == 0) {
+        draw_set_color(c_white);
+        draw_text_ext(215, 295, "Nenhum item nesta categoria ainda.", 20, 380);
+    }
+
+    for (var lj_i = 0; lj_i < lj_n; lj_i++) {
+        var lj_it = lj_lista[lj_i];
+        var lj_y = 282 + lj_i * 46;
+        var lj_sel = (lj_i == loja_sel);
+
+        draw_set_color(lj_sel ? make_color_rgb(52, 84, 78) : cor_escuro);
+        draw_roundrect(215, lj_y, 595, lj_y + 40, false);
+        if (lj_sel) {
+            draw_set_color(cor_ouro);
+            draw_roundrect(215, lj_y, 595, lj_y + 40, true);
+        }
+
+        draw_set_color(c_white);
+        draw_text(230, lj_y + 11, lj_it.nome);
+
+        var lj_txt, lj_cor;
+        if (item_equipado(lj_it.id)) {
+            lj_txt = "EQUIPADO"; lj_cor = cor_verde;
+        } else if (item_comprado(lj_it.id)) {
+            lj_txt = "COMPRADO"; lj_cor = c_white;
+        } else if (global.save.moedas >= lj_it.preco) {
+            lj_txt = string(lj_it.preco) + " moedas"; lj_cor = cor_ouro;
+        } else {
+            lj_txt = string(lj_it.preco) + " moedas"; lj_cor = make_color_rgb(214, 96, 96);
+        }
+        draw_set_color(lj_cor);
+        draw_set_halign(fa_right);
+        draw_text(580, lj_y + 11, lj_txt);
+        draw_set_halign(fa_left);
+    }
+
+    // previa do personagem com o item selecionado
+    draw_set_color(cor_escuro);
+    draw_roundrect(625, 282, 1065, 560, false);
+
+    if (lj_n > 0) {
+        var lj_ver = lj_lista[loja_sel];
+        var lj_prev = {
+            roupa: global.save.equipado.roupa,
+            chapeu: global.save.equipado.chapeu,
+            oculos: global.save.equipado.oculos,
+            acessorio: global.save.equipado.acessorio
+        };
+        variable_struct_set(lj_prev, lj_ver.cat, lj_ver.id);
+
+        draw_set_halign(fa_center);
+        draw_set_color(cor_ouro);
+        draw_text(845, 292, lj_ver.nome);
+        draw_set_color(c_white);
+        desenhar_personagem(845, 540, 3.4, "baixo", floor(current_time / 160) mod 4, lj_prev);
+        draw_set_halign(fa_left);
+    }
+
+    // mensagem de compra / erro
+    draw_set_color(cor_claro);
+    draw_text(215, 575, loja_msg);
+
+    // comandos
+    draw_set_color(cor_ouro);
+    draw_text(215, 600, "A/D ou setas: categoria   W/S ou setas: item   ENTER: comprar / equipar / tirar   L ou ESC: fechar");
+}
+
+// Restaura o estado de desenho
+draw_set_alpha(1);
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
+draw_set_color(c_white);

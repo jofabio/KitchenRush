@@ -14,10 +14,13 @@ if (missao_ativa && tempo_missao_rodando) {
 }
 if (falha_missao_visivel > 0) falha_missao_visivel = max(0, falha_missao_visivel - delta_time / 1000000);
 
+// Loja e avisos de progressao (L abre a loja entre missoes)
+economia_step();
+
 // KITCHENRUSH - STEP | MINIGAMES POR ESTACAO
 // 1) Pergunta -> 2) minigame -> 3) ingrediente e XP -> 4) montagem
 
-if (!pergunta_ativa && !preparo_ativo && !selecao_ativa) {
+if (!pergunta_ativa && !preparo_ativo && !selecao_ativa && !loja_aberta) {
     // MOVIMENTACAO
     var dx = keyboard_check(ord("D"))
            - keyboard_check(ord("A"))
@@ -416,14 +419,16 @@ if (montagem_ativa) {
                         var m = missoes[indice_missao];
                         mensagem_conclusao = "PARABENS! MISSAO " + string(indice_missao + 1) + " DE " + string(array_length(missoes)) + " CONCLUIDA!";
                         tempo_mensagem_conclusao = room_speed * 4;
-                        xp += m.bonus;
+                        ganhar_xp(m.bonus);
+                        moedas_ganhas_missao = moedas_da_missao(m);
+                        ganhar_moedas(moedas_ganhas_missao);
                         xp_ganho_missao = xp - xp_inicio_missao;
                         receita_concluida_nome = m.nome;
                         if (xp_ganho_missao >= 500) classificacao_missao = "CHEF ESTRELA!";
                         else if (xp_ganho_missao >= 400) classificacao_missao = "EXCELENTE!";
                         else if (xp_ganho_missao >= 300) classificacao_missao = "MUITO BOM!";
                         else classificacao_missao = "MISSAO CONCLUIDA!";
-                        mensagem = feedback_nutricional + " +" + string(m.bonus) + " XP!";
+                        mensagem = feedback_nutricional + " +" + string(m.bonus) + " XP! +" + string(moedas_ganhas_missao) + " moedas!";
                         sacola = [];
                         ingredientes_coletados = 0;
                         preparo_ativo = false;
@@ -431,13 +436,11 @@ if (montagem_ativa) {
                         missao_concluida = true;
                         for (var j = 0; j < array_length(concluidos); j++) concluidos[j] = false;
                         indice_missao++;
-                        if (xp >= 500) cargo = "Chef de cozinha";
-                        else if (xp >= 250) cargo = "Cozinheiro";
-                        else if (xp >= 100) cargo = "Assistente de cozinha";
+                        salvar_economia(); // grava a proxima missao
                         if (indice_missao >= array_length(missoes)) {
                             jogo_concluido = true;
                             mensagem_missao = "Todas as receitas concluidas!";
-                        } else mensagem_missao = "Volte ao Chef para a proxima missao!";
+                        } else mensagem_missao = "Volte ao Chef para a proxima missao! (L abre a loja)";
                     }
                 } else {
                     montagem_erros++;
@@ -474,22 +477,22 @@ if (chef_tempo >= chef_duracao) {
     switch (chef_estado) {
 
         case 0:
-            chef_sprite = spr_chef_normal;
+            chef_sprite = chef_sprite_do_estado(0);
             chef_duracao = room_speed * 6;
             break;
 
         case 1:
-            chef_sprite = spr_chef_pensando;
+            chef_sprite = chef_sprite_do_estado(1);
             chef_duracao = room_speed * 4;
             break;
 
         case 2:
-            chef_sprite = spr_chef_orientando;
+            chef_sprite = chef_sprite_do_estado(2);
             chef_duracao = room_speed * 4;
             break;
 
         case 3:
-            chef_sprite = spr_chef_bracos_cruzados;
+            chef_sprite = chef_sprite_do_estado(3);
             chef_duracao = room_speed * 6;
             break;
     }
