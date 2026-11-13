@@ -58,7 +58,7 @@ if (menu_tela == 2) {
 
     if (confirmar) {
         switch (menu_selecao) {
-            case 0: room_goto_next(); break;
+			case 0: room_goto(rm_intro); break;
             case 1: menu_tela = 1; break;
             case 2: game_end(); break;
         }
@@ -78,5 +78,5 @@ if (menu_tela == 2) {
     }
 }
 
-// F1 no menu principal: trocar de usuario
+// F1 no menu principal: serve propriamente trocar de usuario no login inicial
 if (menu_tela == 0 && keyboard_check_pressed(vk_f1)) login_sair();

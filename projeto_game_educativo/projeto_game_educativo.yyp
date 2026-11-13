@@ -11,7 +11,9 @@
   "defaultScriptType":1,
   "Folders":[],
   "ForcedPrefabProjectReferences":[],
-  "IncludedFiles":[],
+  "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"abertura_sabor_de_saber.mp4","CopyToMask":-1,"filePath":"datafiles","name":"abertura_sabor_de_saber.mp4","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+  ],
   "isEcma":false,
   "LibraryEmitters":[],
   "MetaData":{
@@ -20,8 +22,10 @@
   "name":"projeto_game_educativo",
   "resources":[
     {"id":{"name":"obj_cozinha","path":"objects/obj_cozinha/obj_cozinha.yy",},},
+    {"id":{"name":"obj_intro","path":"objects/obj_intro/obj_intro.yy",},},
     {"id":{"name":"obj_menu","path":"objects/obj_menu/obj_menu.yy",},},
     {"id":{"name":"rm_cozinha","path":"rooms/rm_cozinha/rm_cozinha.yy",},},
+    {"id":{"name":"rm_intro","path":"rooms/rm_intro/rm_intro.yy",},},
     {"id":{"name":"rm_menu","path":"rooms/rm_menu/rm_menu.yy",},},
     {"id":{"name":"spr_chef_bracos_cruzados","path":"sprites/spr_chef_bracos_cruzados/spr_chef_bracos_cruzados.yy",},},
     {"id":{"name":"spr_chef_normal","path":"sprites/spr_chef_normal/spr_chef_normal.yy",},},
@@ -83,6 +87,7 @@
   "RoomOrderNodes":[
     {"roomId":{"name":"rm_menu","path":"rooms/rm_menu/rm_menu.yy",},},
     {"roomId":{"name":"rm_cozinha","path":"rooms/rm_cozinha/rm_cozinha.yy",},},
+    {"roomId":{"name":"rm_intro","path":"rooms/rm_intro/rm_intro.yy",},},
   ],
   "templateType":"game",
   "TextureGroups":[

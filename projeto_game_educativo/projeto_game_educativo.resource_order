@@ -2,7 +2,9 @@
   "FolderOrderSettings":[],
   "ResourceOrderSettings":[
     {"name":"obj_cozinha","order":1,"path":"objects/obj_cozinha/obj_cozinha.yy",},
+    {"name":"obj_intro","order":65,"path":"objects/obj_intro/obj_intro.yy",},
     {"name":"obj_menu","order":2,"path":"objects/obj_menu/obj_menu.yy",},
+    {"name":"rm_intro","order":62,"path":"rooms/rm_intro/rm_intro.yy",},
     {"name":"rm_menu","order":3,"path":"rooms/rm_menu/rm_menu.yy",},
     {"name":"spr_chef_bracos_cruzados","order":11,"path":"sprites/spr_chef_bracos_cruzados/spr_chef_bracos_cruzados.yy",},
     {"name":"spr_chef_normal","order":8,"path":"sprites/spr_chef_normal/spr_chef_normal.yy",},
